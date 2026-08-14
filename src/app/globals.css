@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Vault — design tokens.
+   Mapped once from brand/colors_and_type.css (skills/ui-design). Do not invent
+   colour values anywhere else in the app; add them here or not at all.
+   ========================================================================= */
+
+/*
+ * `static` matters: Tailwind v4 tree-shakes theme variables that no generated
+ * utility references, which would silently drop tokens used only by hand-written
+ * CSS below (the violet focus ring computed as currentColor before this was set).
+ * A design-token file must always emit its whole palette.
+ */
+@theme static {
+  /* Core ByteForce palette */
+  --color-ink: #231f20;
+  --color-ink-80: rgba(35, 31, 32, 0.8);
+  --color-ink-60: rgba(35, 31, 32, 0.6);
+  --color-ink-30: rgba(35, 31, 32, 0.3);
+  --color-ink-10: rgba(35, 31, 32, 0.1);
+  --color-mist: #e6e7e8;
+  --color-paper: #ffffff;
+
+  --color-violet: #53449b;
+  --color-violet-700: #3f3479;
+  --color-violet-100: #ddd8ee;
+
+  --color-orange: #f15c24;
+  --color-orange-600: #d94e18;
+  --color-orange-100: #fce3d6;
+
+  /* Semantic roles — violet is brand/primary, orange is the accent + late signal */
+  --color-brand: var(--color-violet);
+  --color-brand-hover: var(--color-violet-700);
+  --color-brand-soft: var(--color-violet-100);
+  --color-accent: var(--color-orange);
+  --color-accent-text: var(--color-orange-600);
+  --color-accent-soft: var(--color-orange-100);
+
+  --color-surface: #ffffff;
+  /* The content area sits on "ground" — the design system's #F3F3F4, not white, so
+     white tables and cards read as objects placed on it. */
+  --color-ground: #f3f3f4;
+  --color-surface-2: #f3f3f4;
+  --color-line: rgba(35, 31, 32, 0.1);
+  --color-line-strong: #e6e7e8;
+  /* Completed task rows recede behind a 2% ink wash (design annotation 12). */
+  --color-wash: rgba(35, 31, 32, 0.02);
+
+  /* Type — Lama Sans only (skills/ui-design). --font-lama is set by next/font/local. */
+  --font-sans: var(--font-lama), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ByteForce is primarily sharp/square — radii used sparingly */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  --shadow-xs: 0 1px 2px rgba(35, 31, 32, 0.06);
+  --shadow-sm: 0 2px 8px rgba(35, 31, 32, 0.08);
+  --shadow-md: 0 8px 24px rgba(35, 31, 32, 0.12);
+  --shadow-lg: 0 24px 64px rgba(35, 31, 32, 0.18);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background: var(--color-surface);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* NFR-11: focus is always visible, 2px violet. Never remove without replacing. */
+  :focus-visible {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Digits that sit in columns line up (tables, counts, dates) */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--color-violet-100);
+    color: var(--color-violet-700);
+  }
+}
+
+@layer utilities {
+  /* Column headers and field labels: 11 / 600, .08em, uppercase, ink-60. */
+  .label-caps {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-60);
+  }
+
+  /* Page title: 22 / 600, .08em tracking, uppercase (18px on mobile). */
+  .display {
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Sidebar wordmark — .16em is deliberately wider than the page-title tracking. */
+  .wordmark {
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .owner-line {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-60);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

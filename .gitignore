@@ -1,0 +1,35 @@
+# deps & builds
+node_modules/
+.next/
+out/
+dist/
+coverage/
+
+# env & secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# databases & local data
+prisma/dev.db*
+*.sqlite
+docker-volumes/
+
+# local dev services (no-Docker Windows path — see docs/LOCAL-DEV-WINDOWS.md)
+# binaries, the Postgres cluster, MinIO objects and the Mailpit store all live here
+.devservices/
+
+# acceptance evidence (screenshots, curl transcripts) — regenerate with npm run verify
+evidence/
+test-results/
+playwright-report/
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+.turbo/
+
+# build artefacts
+tsconfig.tsbuildinfo
+*.tsbuildinfo

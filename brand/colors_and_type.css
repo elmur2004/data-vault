@@ -1,0 +1,200 @@
+/* ByteForce Design Tokens — colors, type, spacing */
+
+/* Fonts.
+   ByteForce uses a single bilingual family — Lama Sans (by 29Letters) — for both display and body.
+   Weights provided: Regular 400, SemiBold 600. 700 maps to SemiBold until a Bold is supplied.
+*/
+@font-face {
+  font-family: 'Lama Sans';
+  src: url('fonts/LamaSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lama Sans';
+  src: url('fonts/LamaSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+/* Map 700/800/900 to SemiBold until licensed Bold/Black are provided. */
+@font-face {
+  font-family: 'Lama Sans';
+  src: url('fonts/LamaSans-SemiBold.ttf') format('truetype');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* === Core brand palette === */
+  --bf-orange:        #F15C24;   /* Bold Orange — primary accent */
+  --bf-violet:        #53449B;   /* Royal Violet — primary brand */
+  --bf-ink:           #231F20;   /* Near-black for body & tagline */
+  --bf-mist:          #E6E7E8;   /* Cool light grey — surfaces */
+  --bf-white:         #FFFFFF;
+
+  /* Tints & shades derived for UI use */
+  --bf-orange-600:    #D94E18;
+  --bf-orange-100:    #FCE3D6;
+  --bf-violet-700:    #3F3479;
+  --bf-violet-100:    #DDD8EE;
+  --bf-ink-80:        rgba(35,31,32,0.80);
+  --bf-ink-60:        rgba(35,31,32,0.60);
+  --bf-ink-30:        rgba(35,31,32,0.30);
+  --bf-ink-10:        rgba(35,31,32,0.10);
+
+  /* === Semantic color roles === */
+  --fg-1: var(--bf-ink);
+  --fg-2: var(--bf-ink-80);
+  --fg-3: var(--bf-ink-60);
+  --fg-muted: var(--bf-ink-30);
+  --fg-inverse: var(--bf-white);
+
+  --bg-1: var(--bf-white);
+  --bg-2: var(--bf-mist);
+  --bg-brand: var(--bf-violet);
+  --bg-accent: var(--bf-orange);
+  --bg-ink: var(--bf-ink);
+
+  --border-1: var(--bf-ink-10);
+  --border-2: var(--bf-mist);
+  --border-brand: var(--bf-violet);
+
+  --accent: var(--bf-orange);
+  --accent-hover: var(--bf-orange-600);
+  --brand: var(--bf-violet);
+  --brand-hover: var(--bf-violet-700);
+
+  /* Hero gradient */
+  --bf-gradient: linear-gradient(90deg, #F15C24 0%, #A24966 50%, #53449B 100%);
+
+  /* === Type system ===
+     Single family — Lama Sans for everything. Display = SemiBold 700, body = Regular 400. */
+  --font-display: 'Lama Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:    'Lama Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --lh-tight:  1.05;
+  --lh-snug:   1.25;
+  --lh-normal: 1.5;
+  --lh-loose:  1.7;
+
+  --tracking-wide:   0.08em;  /* all-caps labels, tagline */
+  --tracking-normal: 0;
+  --tracking-tight:  -0.02em; /* big display */
+
+  /* Scale — 8pt base, roughly 1.25 ratio */
+  --fs-12: 0.75rem;
+  --fs-14: 0.875rem;
+  --fs-16: 1rem;
+  --fs-18: 1.125rem;
+  --fs-20: 1.25rem;
+  --fs-24: 1.5rem;
+  --fs-32: 2rem;
+  --fs-40: 2.5rem;
+  --fs-56: 3.5rem;
+  --fs-72: 4.5rem;
+  --fs-96: 6rem;
+
+  /* === Spacing (4pt grid) === */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  --sp-9: 96px;
+  --sp-10: 128px;
+
+  /* === Radii === */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 8px;
+  --r-4: 12px;
+  --r-pill: 999px;
+
+  /* ByteForce is primarily SHARP / square — radii are used sparingly */
+
+  /* === Shadows === */
+  --shadow-xs: 0 1px 2px rgba(35,31,32,0.06);
+  --shadow-sm: 0 2px 8px rgba(35,31,32,0.08);
+  --shadow-md: 0 8px 24px rgba(35,31,32,0.12);
+  --shadow-lg: 0 24px 64px rgba(35,31,32,0.18);
+
+  /* === Motion === */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+  --dur-slow: 360ms;
+}
+
+/* === Base semantic styles === */
+/* Force Lama Sans everywhere — overrides any sandbox/UA default like IBM Plex Sans Arabic. */
+html, body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, td, th, button, input, textarea, select, label, strong, em, b, i, small, .h1, .h2, .h3, .h4 {
+  font-family: 'Lama Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+html { color: var(--fg-1); background: var(--bg-1); }
+body { margin: 0; font-size: var(--fs-16); line-height: var(--lh-normal); }
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(var(--fs-40), 6vw, var(--fs-96));
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--brand);
+  margin: 0 0 var(--sp-5) 0;
+  text-transform: uppercase;
+}
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(var(--fs-32), 4vw, var(--fs-56));
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+  margin: 0 0 var(--sp-4) 0;
+  text-transform: uppercase;
+}
+h3, .h3 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--fs-24);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+  margin: 0 0 var(--sp-3) 0;
+}
+h4, .h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--fs-18);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+  margin: 0 0 var(--sp-2) 0;
+}
+p  { margin: 0 0 var(--sp-4) 0; color: var(--fg-2); }
+small, .caption { font-size: var(--fs-12); color: var(--fg-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+.eyebrow { font-size: var(--fs-12); font-weight: 700; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: 0.95em; }
+
+/* Tagline styling — mirrors "BY TELLING FORCE" treatment */
+.tagline {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--fs-14);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--fg-1);
+  line-height: 1.2;
+}
+
+/* RTL/Arabic-friendly base */
+[dir="rtl"] {
+  font-family: var(--font-sans);
+}

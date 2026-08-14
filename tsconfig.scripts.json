@@ -1,0 +1,16 @@
+{
+  // Operator scripts (seed, storage init, milestone checks) run in plain Node via tsx,
+  // where `server-only` throws by design. Aliasing it here — and only here — lets those
+  // scripts import the real server modules without weakening the guard inside Next,
+  // which resolves `server-only` through its own bundler config.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"],
+      "server-only": ["./tests/stubs/server-only.ts"]
+    }
+  },
+  "include": ["scripts/**/*.ts", "prisma/**/*.ts", "src/**/*.ts"]
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 720" role="img" aria-label="ByteForce">
+  
+  <g fill="#F15C24">
+    <rect x="140" y="120" width="46" height="400"></rect>
+    <rect x="140" y="490" width="560" height="46"></rect>
+    <polygon points="260,536 260,650 380,536"></polygon>
+  </g>
+  
+  <g fill="#53449B" font-family="Archivo Black, Arial Black, Helvetica, sans-serif" font-weight="900" letter-spacing="1" text-anchor="start">
+    <text x="210" y="280" font-size="140">BYTE</text>
+    <text x="210" y="455" font-size="140">FORCE</text>
+  </g>
+  
+  <g fill="#231F20" font-family="Archivo, Arial, sans-serif" font-weight="700" letter-spacing="2">
+    <text x="440" y="582" font-size="28">BY TELLING</text>
+    <text x="462" y="618" font-size="28">FORCE</text>
+  </g>
+</svg>

@@ -1,0 +1,378 @@
+// Vault — data model.
+// Reference schema and modelling rules: skills/data-model/SKILL.md (implements SPEC §5–§6).
+// Models arrive with the milestone that first needs them; never edit an applied
+// migration, always add a new one.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumerations (SPEC §6.1) — real Postgres enums, not string columns.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Company {
+  BYTEFORCE
+  BSYSTEMS
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+/// §10.3 — a file is servable only once it is CLEAN.
+enum ScanStatus {
+  PENDING
+  CLEAN
+  REJECTED
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+}
+
+enum AttachmentKind {
+  FILE
+  LINK
+}
+
+enum SheetType {
+  LEADS
+  EMPLOYEES
+  DATA
+  CAMPAIGN_LEADS
+}
+
+enum SheetStorage {
+  LINK
+  FILE
+}
+
+/// D-04 — closed at the §6.1 nine. Adding a value later is a migration; renaming or
+/// removing one after records exist is not cheap.
+enum DocumentType {
+  CONTRACT
+  PROPOSAL
+  INVOICE
+  REPORT
+  PRESENTATION
+  BRAND_ASSET
+  LEGAL
+  HR
+  OTHER
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M1 — auth. Field names and types match what the installed Better Auth expects;
+// verify after any upgrade with `npx tsx scripts/dump-auth-schema.ts`.
+// The Prisma adapter resolves models by client property (db.user, db.session, …).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  // Additional field declared in src/lib/auth.ts with input:false, so it can never
+  // be set through a public endpoint (§3.1, NFR-07).
+  role          UserRole  @default(EMPLOYEE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+  employee Employee?
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  // Argon2id digest (NFR-06/BR-12). Never displayed, never returned by any endpoint.
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M1 — employees (SPEC §5.1). Deactivated, never deleted (§5.3, BR-13).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Employee {
+  id       String   @id @default(uuid())
+  // Null until the invitation is used and the account exists (§5.1).
+  userId   String?  @unique
+  user     User?    @relation(fields: [userId], references: [id])
+  fullName String   @db.VarChar(120)
+  email    String   @unique @db.VarChar(160)
+  jobTitle String?  @db.VarChar(120)
+  // ByteForce, B-Systems, or null meaning both (§5.1).
+  company  Company?
+  isActive Boolean  @default(true)
+
+  invitations Invitation[]
+  tasks       Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model Invitation {
+  id         String    @id @default(uuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  // SHA-256 of the token. The raw token exists only in the emailed link (§5.2).
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  // Single use. Set the moment the account is created.
+  usedAt     DateTime?
+  // Set when an admin re-invites, so the old link stops working immediately.
+  revokedAt  DateTime?
+  purpose    InvitationPurpose @default(ACTIVATION)
+  createdAt  DateTime  @default(now())
+
+  @@index([employeeId])
+}
+
+enum InvitationPurpose {
+  ACTIVATION
+  PASSWORD_RESET
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M3 — Forms (SPEC §6.2, §7). A registry of links to forms built elsewhere.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Form {
+  id      String  @id @default(uuid())
+  name    String  @db.VarChar(160)
+  /// http/https only, enforced in zod and re-checked server-side (BR-01).
+  url     String  @db.VarChar(2048)
+  company Company
+  notes   String?
+
+  createdBy String
+  /// BR-11 — "Delete" archives. Nothing is ever hard deleted.
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isArchived, company])
+  @@index([isArchived, createdAt])
+  @@index([url])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M4 — Sheets (SPEC §6.3, §8.1). A sheet is a link OR an uploaded file (BR-02).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Sheet {
+  id          String       @id @default(uuid())
+  name        String       @db.VarChar(160)
+  storageMode SheetStorage
+  /// Required when storageMode = LINK, null otherwise (BR-02).
+  url         String?      @db.VarChar(2048)
+  /// Required when storageMode = FILE, null otherwise (BR-02).
+  fileId      String?      @unique
+  file        StoredFile?  @relation("sheetFile", fields: [fileId], references: [id])
+
+  /// The date the sheet itself was created, typed by the user. Deliberately distinct
+  /// from createdAt, which is when the Vault record appeared (§6.3).
+  dateCreated DateTime  @db.Date
+  company     Company
+  type        SheetType
+
+  /// §6.3.1 — a count is meaningless without its as-of date, so BR-03 requires one
+  /// whenever the number is entered by hand. Computed automatically for uploads.
+  lastRecordCount     Int?
+  lastRecordCountAsOf DateTime? @db.Date
+
+  notes String?
+
+  createdBy  String
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isArchived, company, type])
+  @@index([isArchived, dateCreated])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M5 — Documents (SPEC §6.4, §8.2).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Document {
+  id String @id @default(uuid())
+  name String @db.VarChar(160)
+  /// Optional per D-07 — a required description produces a column of one-word entries.
+  description String?
+  company     Company
+  type        DocumentType
+
+  fileId String     @unique
+  file   StoredFile @relation("documentFile", fields: [fileId], references: [id])
+
+  createdBy  String
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isArchived, company, type])
+  @@index([isArchived, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M6 — Tasks (SPEC §6.5, §6.6, §9). The only section with real logic.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Task {
+  id         String   @id @default(uuid())
+  /// One assignee per task (§6.5). Multiple assignees are out of scope (§15).
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  name        String   @db.VarChar(200)
+  description String?
+  /// Optional per D-05 — some internal work belongs to neither company.
+  company     Company?
+  /// Date-only per D-06. Lateness is evaluated against this date in Africa/Cairo.
+  deadline    DateTime @db.Date
+
+  status     TaskStatus @default(OPEN)
+  /// One of the three things that satisfy the completion gate (BR-05).
+  resultText String?
+
+  /// BR-06 — stamped from server time, never from the browser, never user editable.
+  completedAt DateTime?
+  /// BR-07 — computed once at completion and STORED. There is no recompute path
+  /// anywhere in this codebase: editing the deadline afterwards must not change
+  /// what was true when the work was finished (AC-12).
+  wasLate  Boolean?
+  daysLate Int?
+
+  attachments TaskAttachment[]
+
+  createdBy String
+  isArchived Boolean  @default(false)
+  /// The "Creation Date" column (§9.2).
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, status, deadline])
+  @@index([isArchived, status, deadline])
+}
+
+model TaskAttachment {
+  id     String         @id @default(uuid())
+  taskId String
+  task   Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind   AttachmentKind
+
+  fileId String?     @unique
+  file   StoredFile? @relation("attachmentFile", fields: [fileId], references: [id])
+  url    String?     @db.VarChar(2048)
+  label  String?     @db.VarChar(160)
+
+  addedBy   String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M2 — stored files (SPEC §6.7, §10.3). Shared by Sheets, Documents and task
+// attachments; nothing else talks to object storage.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model StoredFile {
+  id String @id @default(uuid())
+  /// Sanitised on storage, kept for display and Content-Disposition.
+  originalFilename String @db.VarChar(255)
+  /// `<scope>/<uuid>` — non-guessable, non-sequential, never derived from the filename.
+  storageKey       String @unique @db.VarChar(512)
+  /// From content inspection, never from the extension (BR-04).
+  mimeType         String @db.VarChar(100)
+  sizeBytes        Int
+
+  /// Increments on replacement; the previous row is kept forever (FR-S06/FR-D06).
+  version    Int         @default(1)
+  replacesId String?     @unique
+  replaces   StoredFile? @relation("versions", fields: [replacesId], references: [id])
+  newer      StoredFile? @relation("versions")
+
+  scanStatus ScanStatus @default(PENDING)
+  uploadedBy String
+  uploadedAt DateTime   @default(now())
+
+  sheet      Sheet?          @relation("sheetFile")
+  document   Document?       @relation("documentFile")
+  attachment TaskAttachment? @relation("attachmentFile")
+
+  @@index([scanStatus])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-cutting — append-only activity log (SPEC §6.8).
+// No update or delete path exists anywhere in the codebase, ever.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  entityType String   @db.VarChar(40)
+  entityId   String
+  action     String   @db.VarChar(40)
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
