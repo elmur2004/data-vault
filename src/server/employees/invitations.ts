@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import type { InvitationPurpose, Prisma, PrismaClient } from "@prisma/client";
-import { db } from "@/lib/db";
+import type { InvitationPurpose } from "@prisma/client";
+import { db, type AnyDb } from "@/lib/db";
 import { invitationEmail, sendMail } from "@/lib/mail";
 
 /**
@@ -14,7 +14,7 @@ import { invitationEmail, sendMail } from "@/lib/mail";
 
 export const INVITATION_DAYS = 7;
 
-type Client = PrismaClient | Prisma.TransactionClient;
+type Client = AnyDb;
 
 function hashToken(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");

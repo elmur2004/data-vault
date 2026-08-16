@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PrismaClient } from "@prisma/client";
 import { randomBytes } from "node:crypto";
+// The app's own client, so service calls here run through exactly what production runs.
+import { db } from "@/lib/db";
 import { createEmployee } from "@/server/employees/service";
 import { issueInvitation } from "@/server/employees/invitations";
 import { setPasswordFromToken } from "@/server/auth/activate";
@@ -20,7 +21,6 @@ import { hashPassword } from "@/lib/password";
  */
 
 const BASE = process.env.VAULT_BASE_URL ?? "http://localhost:3001";
-const db = new PrismaClient();
 const tag = `n${Date.now().toString(36)}`;
 
 let serverUp = false;
@@ -151,6 +151,9 @@ afterAll(async () => {
   const emps = await db.employee.findMany({ where: { email: { contains: tag } }, select: { userId: true } });
   await db.employee.deleteMany({ where: { email: { contains: tag } } });
   for (const e of emps) if (e.userId) await db.user.delete({ where: { id: e.userId } }).catch(() => {});
+  // The throwaway admin this suite creates has no Employee row, so it has to be
+  // removed explicitly — otherwise every run leaves another ADMIN behind.
+  await db.user.deleteMany({ where: { email: { contains: tag } } });
   await db.$disconnect();
 });
 

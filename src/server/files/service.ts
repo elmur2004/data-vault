@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import type { Prisma, PrismaClient, StoredFile } from "@prisma/client";
-import { db } from "@/lib/db";
+import type { StoredFile } from "@prisma/client";
+import { db, type AnyDb } from "@/lib/db";
 import { ForbiddenError, UnprocessableError } from "@/lib/errors";
 import { writeActivity } from "@/server/activity/log";
 import { allowedLabel, detectType, isAllowed, type UploadScope } from "./inspect";
@@ -18,7 +18,7 @@ import { deleteObject, putObject, signedDownloadUrl } from "./storage";
  * need rework, which is why it exists before any section that uses it.
  */
 
-type Client = PrismaClient | Prisma.TransactionClient;
+type Client = AnyDb;
 
 export const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB ?? 25);
 const MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024;

@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Runs after `git pull` / `git merge`.
+#
+# The point of this hook: a new push should never leave a teammate with a broken
+# checkout. Dependencies, migrations and the admin account are brought back into line
+# automatically, so the next `npm run dev` just works.
+#
+# Enable once, per clone:  npm run hooks:install
+#
+# It is deliberately conservative — it installs and migrates, and never resets or
+# drops anything. If it cannot fix something it says so and gets out of the way.
+
+set -e
+
+changed() {
+  git diff --name-only HEAD@{1} HEAD 2>/dev/null | grep -qE "$1"
+}
+
+# Dependencies first: a migration or the doctor may need a package that just arrived.
+if changed '^(package-lock\.json|package\.json)$'; then
+  echo "→ dependencies changed, running npm ci"
+  npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+fi
+
+# Everything else — schema, env keys, storage, the admin account.
+if changed '^(prisma/|\.env\.example|scripts/doctor\.ts)'; then
+  echo "→ schema or environment changed, healing"
+fi
+
+npm run doctor || {
+  echo ""
+  echo "  The automatic heal could not finish. Run 'npm run doctor' to see why."
+  exit 0   # never block the merge itself
+}

@@ -20,7 +20,7 @@ const db = new PrismaClient();
 
 const RESET = process.argv.includes("--reset-admin");
 const DEMO = process.argv.includes("--demo");
-const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.local").toLowerCase();
+const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.com").toLowerCase();
 
 /**
  * A chosen password, for a local instance somebody has to sign into repeatedly.

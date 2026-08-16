@@ -1,6 +1,5 @@
 import "server-only";
-import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { db, type TxClient } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
 import { writeActivity, type EntityType } from "@/server/activity/log";
 
@@ -30,7 +29,7 @@ type ArchivableDelegate = {
   update: (args: { where: { id: string }; data: { isArchived: boolean } }) => Promise<unknown>;
 };
 
-type DelegateSelector = (tx: Prisma.TransactionClient) => ArchivableDelegate;
+type DelegateSelector = (tx: TxClient) => ArchivableDelegate;
 
 async function setArchived(
   actorId: string,

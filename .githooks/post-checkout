@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# Runs after `git checkout` / `git clone`.
+#
+# Branch switches move the schema around, so the database has to follow. Only reacts
+# to an actual branch change ($3 = 1), not to `git checkout <file>`.
+#
+# Enable once, per clone:  npm run hooks:install
+
+set -e
+
+[ "$3" = "1" ] || exit 0
+
+# A fresh clone has no node_modules at all.
+if [ ! -d node_modules ]; then
+  echo "→ fresh checkout, installing dependencies"
+  npm install --no-audit --no-fund
+fi
+
+npm run doctor || {
+  echo ""
+  echo "  The automatic heal could not finish. Run 'npm run doctor' to see why."
+  exit 0   # never block the checkout
+}

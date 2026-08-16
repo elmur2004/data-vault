@@ -4,9 +4,13 @@
   "private": true,
   "description": "Vault — internal ops registry for ByteForce and B-Systems (Forms, Sheets, Documents, Tasks)",
   "scripts": {
+    "doctor": "tsx --tsconfig tsconfig.scripts.json scripts/doctor.ts",
+    "predev": "npm run doctor",
     "dev": "next dev -p 3001",
     "build": "next build",
+    "prestart": "npm run doctor",
     "start": "next start -p 3001",
+    "hooks:install": "git config core.hooksPath .githooks",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

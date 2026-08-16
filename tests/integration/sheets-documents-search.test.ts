@@ -163,9 +163,12 @@ describe("AC-04 — the record count is computed from an uploaded XLSX", () => {
     expect(uploaded.headerDetected).toBe(true);
     expect(uploaded.countable).toBe(true);
 
-    const today = new Date();
+    // "Today" means today in Africa/Cairo (BR-15), not in UTC. Between midnight and
+    // 02:00 Cairo those are different dates, and comparing against the UTC date makes
+    // this test fail for two hours a night while the app is behaving correctly.
+    const { todayInCairo } = await import("@/lib/datetime");
     expect(uploaded.lastRecordCountAsOf?.toISOString().slice(0, 10)).toBe(
-      today.toISOString().slice(0, 10),
+      todayInCairo().toISOString().slice(0, 10),
     );
 
     const sheet = await createSheet(adminUser.id, {

@@ -1,6 +1,6 @@
 import "server-only";
-import type { Prisma, PrismaClient } from "@prisma/client";
-import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
+import { db, type AnyDb } from "@/lib/db";
 
 /**
  * Append-only activity log (SPEC §6.8).
@@ -35,7 +35,7 @@ export type Action =
   | "reactivate"
   | "replace_file";
 
-type Client = PrismaClient | Prisma.TransactionClient;
+type Client = AnyDb;
 
 export async function writeActivity(
   tx: Client,
