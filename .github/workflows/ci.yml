@@ -12,8 +12,12 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
+    # Postgres and Mailpit both run correctly on their image's default command, so they
+    # can be service containers. MinIO cannot: its entrypoint needs `server /data`, and
+    # service containers have no way to pass a command — which is why it is started as
+    # a step below instead.
     services:
       postgres:
         image: postgres:16-alpine
@@ -23,18 +27,6 @@ jobs:
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-
-      minio:
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: local
-          MINIO_ROOT_PASSWORD: localsecret
-        ports: ["9000:9000"]
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
@@ -73,12 +65,27 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=local \
+            -e MINIO_ROOT_PASSWORD=localsecret \
+            minio/minio:latest server /data
+          for i in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:9000/minio/health/live > /dev/null; then
+              echo "minio is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "minio did not become healthy"; docker logs minio; exit 1
+
       - name: Install
         run: npm ci --no-audit --no-fund
 
       # The same routine developers run locally. If it cannot heal a clean checkout,
       # neither can anybody who pulls this commit.
-      - name: Heal (migrations, bucket, admin)
+      - name: Heal (env, migrations, bucket, admin)
         run: npm run doctor
 
       - name: Lint
@@ -87,31 +94,33 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit and integration tests
-        run: npm test
-
       - name: Build
         run: npm run build
 
-      # The direct-API negatives (AC-08 422, AC-13/AC-14 403) need the app running.
+      # Started before the tests, because the direct-API negatives (AC-08 422,
+      # AC-13/AC-14 403) are sent over HTTP at a running server.
       - name: Start the app
         run: |
-          npm run start &
+          npm run start > /tmp/app.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://localhost:3001/login > /dev/null; then
               echo "app is up"; exit 0
             fi
             sleep 2
           done
-          echo "app did not start within 120s"; exit 1
+          echo "app did not start within 120s"; cat /tmp/app.log; exit 1
 
-      - name: Acceptance — direct API negatives
-        run: npx vitest run tests/integration/api-negatives.test.ts
+      - name: Tests — unit, integration and the direct-API negatives
+        run: npm test
 
       - name: Acceptance — browser criteria
         run: |
           npx playwright install --with-deps chromium
           npx tsx scripts/checks/acceptance.ts
+
+      - name: App log
+        if: failure()
+        run: cat /tmp/app.log || true
 
       - name: Upload evidence
         if: always()

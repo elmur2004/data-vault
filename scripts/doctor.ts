@@ -286,32 +286,9 @@ function ensureDatabaseExists(): "ok" | "healed" | "failed" {
   const adminUrl = new URL(url);
   adminUrl.pathname = "/postgres";
 
-  try {
-    run("npx", ["prisma", "db", "execute", "--url", adminUrl.toString(), "--stdin"], {
-      quiet: true,
-    });
-  } catch {
-    /* falls through â€” the create below reports the real problem */
-  }
-
-  try {
-    execFileSync(
-      "npx",
-      ["prisma", "db", "execute", "--url", adminUrl.toString(), "--stdin"],
-      {
-        cwd: ROOT,
-        input: `SELECT 'exists' FROM pg_database WHERE datname = '${name}';`,
-        stdio: "pipe",
-        encoding: "utf8",
-        shell: process.platform === "win32",
-      },
-    );
-  } catch {
-    return "failed";
-  }
-
-  // Try to create; Postgres has no IF NOT EXISTS for databases, so an "already
-  // exists" error is the success case.
+  // Postgres has no CREATE DATABASE IF NOT EXISTS, so the create is simply attempted
+  // and an "already exists" error is the success case. Connecting to the maintenance
+  // database first would be a second round trip that tells us nothing more.
   try {
     execFileSync("npx", ["prisma", "db", "execute", "--url", adminUrl.toString(), "--stdin"], {
       cwd: ROOT,

@@ -13,6 +13,7 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "pretest": "npm run doctor",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
