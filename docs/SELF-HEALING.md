@@ -19,11 +19,11 @@ npm run hooks:install     # once per clone
 | Step | What it does | If it is already fine |
 |---|---|---|
 | **environment** | Creates `.env` if missing, generates the auth and cron secrets, adds any key that was added upstream, and pins the admin credentials. Values you changed are kept. | untouched |
-| **services** | Starts Postgres, MinIO and Mailpit — **only the ones that are not already listening**. | untouched |
+| **services** | Starts Postgres and Mailpit - **only the ones that are not already listening**. | untouched |
 | **database** | Creates the database if it does not exist. | untouched |
 | **migrations** | Applies pending migrations with `prisma migrate deploy`. | untouched |
 | **prisma client** | Regenerates only when the schema is newer than the generated client. | untouched |
-| **object storage** | Creates the bucket if missing. | untouched |
+| **file storage** | Creates the `storage/` directory if missing, and refuses one inside `public/`. | untouched |
 | **admin account** | Guarantees `admin@byteforce.com` / `password123` exists and works. | untouched, and **no sessions are revoked** |
 
 Run it twice and the second run reports "Everything was already healthy."
@@ -57,7 +57,7 @@ password123
 Both live in `.env` (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`) and the doctor re-pins
 them on every run. It still enforces the app's 10-character minimum, so this path cannot
 set something the sign-in form would reject, and the digest is Argon2id like any other
-password — nothing is stored readable (BR-12/NFR-06).
+password - nothing is stored readable (BR-12/NFR-06).
 
 **Before any real deployment, change both.** In production the doctor refuses to set a
 fixed password unless `ALLOW_FIXED_ADMIN_PASSWORD=1` is set explicitly, so this cannot
@@ -68,7 +68,7 @@ be shipped by accident.
 `src/lib/db.ts` retries transient connection failures (`P1001`, `P1002`, `P1008`,
 `P1017`, `P2024`, and socket-level resets) with backoff, so a database restart, a
 laptop waking, or a reaped connection recovers on its own instead of taking a page
-down. Only connection failures are retried — a constraint violation or a 422 is
+down. Only connection failures are retried - a constraint violation or a 422 is
 returned immediately, because retrying those would hide real bugs and could re-run a
 write that already succeeded.
 
@@ -78,13 +78,13 @@ write that already succeeded.
 npx tsx --tsconfig tsconfig.scripts.json scripts/checks/self-heal.ts
 ```
 
-Breaks the environment on purpose — stops MinIO and Mailpit, renames the admin, corrupts
-its password hash — heals it, then asserts everything came back, Postgres was never
+Breaks the environment on purpose - stops Mailpit, renames the admin, corrupts
+its password hash - heals it, then asserts everything came back, Postgres was never
 restarted, no data was lost, and a second run is a no-op. Currently 9/9.
 
 ## On every push
 
-`.github/workflows/ci.yml` runs the same routine against real Postgres, MinIO and
-Mailpit containers, then lint, typecheck, 136 tests, the build, the direct-API negatives
+`.github/workflows/ci.yml` runs the same routine against real Postgres and Mailpit
+containers, then lint, typecheck, 139 tests, the build, the direct-API negatives
 and the browser acceptance criteria. If the doctor cannot heal a clean checkout, CI
-fails — which is the point: nobody should discover that by pulling.
+fails - which is the point: nobody should discover that by pulling.

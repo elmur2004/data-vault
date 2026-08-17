@@ -1,8 +1,8 @@
 name: CI
 
-# Every push is verified against real services, not mocks — the invariants this app
+# Every push is verified against real services, not mocks â€” the invariants this app
 # exists for (the 422 completion gate, 403 scoping, signed URLs, content inspection)
-# are only meaningful against a real Postgres and a real S3.
+# are only meaningful against a real Postgres and real files on disk.
 on:
   push:
     branches: [main]
@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
-    # Postgres and Mailpit both run correctly on their image's default command, so they
-    # can be service containers. MinIO cannot: its entrypoint needs `server /data`, and
-    # service containers have no way to pass a command — which is why it is started as
-    # a step below instead.
+    # Both run on their image's default command, so both can be service containers.
+    # There is no object storage to stand up — uploads are written to disk.
     services:
       postgres:
         image: postgres:16-alpine
@@ -40,12 +38,7 @@ jobs:
       APP_URL: http://localhost:3001
       BETTER_AUTH_URL: http://localhost:3001
       BETTER_AUTH_SECRET: ci-secret-not-used-anywhere-else-000000
-      S3_ENDPOINT: http://127.0.0.1:9000
-      S3_REGION: auto
-      S3_BUCKET: database-files
-      S3_ACCESS_KEY_ID: local
-      S3_SECRET_ACCESS_KEY: localsecret
-      S3_FORCE_PATH_STYLE: "true"
+      STORAGE_DIR: storage
       SIGNED_URL_TTL_SECONDS: "300"
       MAX_UPLOAD_MB: "25"
       SMTP_HOST: 127.0.0.1
@@ -65,27 +58,12 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio \
-            -p 9000:9000 \
-            -e MINIO_ROOT_USER=local \
-            -e MINIO_ROOT_PASSWORD=localsecret \
-            minio/minio:latest server /data
-          for i in $(seq 1 40); do
-            if curl -sf http://127.0.0.1:9000/minio/health/live > /dev/null; then
-              echo "minio is up"; exit 0
-            fi
-            sleep 2
-          done
-          echo "minio did not become healthy"; docker logs minio; exit 1
-
       - name: Install
         run: npm ci --no-audit --no-fund
 
       # The same routine developers run locally. If it cannot heal a clean checkout,
       # neither can anybody who pulls this commit.
-      - name: Heal (env, migrations, bucket, admin)
+      - name: Heal (env, migrations, storage, admin)
         run: npm run doctor
 
       - name: Lint
@@ -110,10 +88,10 @@ jobs:
           done
           echo "app did not start within 120s"; cat /tmp/app.log; exit 1
 
-      - name: Tests — unit, integration and the direct-API negatives
+      - name: Tests â€” unit, integration and the direct-API negatives
         run: npm test
 
-      - name: Acceptance — browser criteria
+      - name: Acceptance â€” browser criteria
         run: |
           npx playwright install --with-deps chromium
           npx tsx scripts/checks/acceptance.ts

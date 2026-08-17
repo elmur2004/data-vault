@@ -27,8 +27,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
       disposition: inline ? "inline" : "attachment",
     });
 
+    // The signed link is relative so it stays correct behind a proxy or on another
+    // port; NextResponse.redirect needs an absolute one, so it is resolved against
+    // the incoming request rather than a hardcoded host.
     // 307 keeps the method and makes it obvious this is a hand-off, not the file.
-    return NextResponse.redirect(url, {
+    return NextResponse.redirect(new URL(url, request.url), {
       status: 307,
       headers: { "cache-control": "no-store, private" },
     });

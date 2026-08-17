@@ -12,8 +12,8 @@ import { join } from "node:path";
 const BASE = process.env.VAULT_BASE_URL ?? "http://localhost:3001";
 const OUT = join(process.cwd(), "evidence", process.argv[2] ?? "ui");
 
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.local";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.com";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "password123";
 const EMP_EMAIL = "hana.demo@byteforce.local";
 const EMP_PASSWORD = "employee-demo-pass";
 
@@ -58,7 +58,7 @@ async function main() {
 
   const browser = await chromium.launch();
 
-  // ── Admin, desktop ──
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Admin, desktop Ã¢â€â‚¬Ã¢â€â‚¬
   const admin = await signIn(browser, ADMIN_EMAIL, ADMIN_PASSWORD, 1280, 900);
   for (const [route, name] of [
     ["/forms", "forms-desktop"],
@@ -72,7 +72,7 @@ async function main() {
     await shoot(admin.ctx, route, name);
   }
 
-  // Tasks with a card expanded — the screen the design leads with.
+  // Tasks with a card expanded Ã¢â‚¬â€ the screen the design leads with.
   const expand = await admin.ctx.newPage();
   await expand.goto(`${BASE}/tasks`, { waitUntil: "networkidle" });
   const firstExpand = expand.getByRole("button", { name: "Show tasks" }).first();
@@ -104,7 +104,7 @@ async function main() {
 
   await admin.ctx.close();
 
-  // ── Admin, 375px ──
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Admin, 375px Ã¢â€â‚¬Ã¢â€â‚¬
   const mobile = await signIn(browser, ADMIN_EMAIL, ADMIN_PASSWORD, 375, 812);
   for (const [route, name] of [
     ["/forms", "forms-mobile"],
@@ -122,13 +122,13 @@ async function main() {
   await drawer.close();
   await mobile.ctx.close();
 
-  // ── Employee view — one card, no other names (AC-13) ──
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Employee view Ã¢â‚¬â€ one card, no other names (AC-13) Ã¢â€â‚¬Ã¢â€â‚¬
   const emp = await signIn(browser, EMP_EMAIL, EMP_PASSWORD, 1280, 900);
   if (!emp.page.url().includes("/login")) {
     await shoot(emp.ctx, "/tasks", "tasks-employee-desktop");
     await shoot(emp.ctx, "/forms", "forms-employee-desktop");
   } else {
-    console.log("employee sign-in failed — run `npm run db:demo`");
+    console.log("employee sign-in failed Ã¢â‚¬â€ run `npm run db:demo`");
   }
   await emp.ctx.close();
 

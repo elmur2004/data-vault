@@ -3,13 +3,15 @@
  *
  *   npx tsx --tsconfig tsconfig.scripts.json scripts/checks/self-heal.ts
  *
- * It breaks the environment on purpose — stops services, renames the admin, corrupts
- * its password — runs `npm run doctor`, and checks that everything came back. It also
+ * It breaks the environment on purpose - stops services, renames the admin, corrupts
+ * its password - runs `npm run doctor`, and checks that everything came back. It also
  * asserts the two things that must NOT happen: Postgres is never restarted, and no
  * data is lost.
  */
 import { execFileSync } from "node:child_process";
 import { createConnection } from "node:net";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { PrismaClient } from "@prisma/client";
 
 const ROOT = process.cwd();
@@ -63,11 +65,11 @@ async function main() {
     await db.$queryRaw<{ started: Date }[]>`SELECT pg_postmaster_start_time() AS started`
   )[0]?.started;
 
-  // ── break it ──────────────────────────────────────────────────────────────
-  console.log("breaking the environment on purpose…\n");
+// --- break it ----------------------------------------------------------------
+  console.log("breaking the environment on purpose...\n");
 
   const admin = await db.user.findFirst({ where: { role: "ADMIN" } });
-  if (!admin) throw new Error("no admin to break — run npm run doctor first");
+  if (!admin) throw new Error("no admin to break - run npm run doctor first");
 
   await db.user.update({
     where: { id: admin.id },
@@ -81,9 +83,9 @@ async function main() {
     },
   });
 
-  // Stop the two services that can be safely stopped. Postgres stays up on purpose:
-  // healing must never require a database restart.
-  for (const name of ["minio", "mailpit"]) {
+  // Stop what can be safely stopped. Postgres stays up on purpose: healing must
+  // never require a database restart.
+  for (const name of ["mailpit"]) {
     try {
       execFileSync(
         "powershell",
@@ -100,14 +102,13 @@ async function main() {
   }
   await new Promise((r) => setTimeout(r, 1500));
 
-  const minioDown = !(await portOpen(9000));
   const mailpitDown = !(await portOpen(1025));
-  console.log(`  minio down: ${minioDown} · mailpit down: ${mailpitDown}\n`);
+  console.log(`  mailpit down: ${mailpitDown}\n`);
 
   await db.$disconnect();
 
-  // ── heal ──────────────────────────────────────────────────────────────────
-  console.log("running the doctor…\n");
+// --- heal --------------------------------------------------------------------
+  console.log("running the doctor...\n");
   const output = doctor();
   console.log(
     output
@@ -117,11 +118,16 @@ async function main() {
   );
   console.log("");
 
-  // ── verify ────────────────────────────────────────────────────────────────
+// --- verify ------------------------------------------------------------------
   const db2 = new PrismaClient();
 
-  check("minio is back", await portOpen(9000));
   check("mailpit is back", await portOpen(1025));
+  // Files are on local disk now, so the storage directory is what must survive.
+  check(
+    "file storage is present",
+    existsSync(resolve(ROOT, process.env.STORAGE_DIR ?? "storage")),
+    resolve(ROOT, process.env.STORAGE_DIR ?? "storage"),
+  );
 
   const healedAdmin = await db2.user.findUnique({ where: { email: ADMIN_EMAIL } });
   check("admin email restored", Boolean(healedAdmin), ADMIN_EMAIL);
@@ -167,7 +173,7 @@ async function main() {
       after.employees >= before.employees &&
       after.activity >= before.activity &&
       after.completed >= before.completed,
-    `forms ${before.forms}→${after.forms}, tasks ${before.tasks}→${after.tasks}, activity ${before.activity}→${after.activity}`,
+    `forms ${before.forms} -> ${after.forms}, tasks ${before.tasks} -> ${after.tasks}, activity ${before.activity} -> ${after.activity}`,
   );
 
   // Running it again must change nothing.

@@ -9,10 +9,10 @@ import { scanBuffer } from "./scan";
 import { deleteObject, putObject, signedDownloadUrl } from "./storage";
 
 /**
- * The upload pipeline (§10.3). Every upload in the app goes through `storeUpload` —
+ * The upload pipeline (§10.3). Every upload in the app goes through `storeUpload` -
  * Sheets, Documents and task attachments alike. There is no bypass.
  *
- *   size → content inspection → persist (with compensating cleanup) → scan → row count
+ *   size - content inspection - persist (with compensating cleanup) - scan - row count
  *
  * SPEC §17 is explicit that improvising this per section is the piece most likely to
  * need rework, which is why it exists before any section that uses it.
@@ -25,7 +25,7 @@ const MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 /**
  * Strips directories and control characters, collapses whitespace, caps at 255.
- * The result is only ever used for display and Content-Disposition — never as part
+ * The result is only ever used for display and Content-Disposition - never as part
  * of the storage key.
  */
 export function sanitizeFilename(name: string): string {
@@ -53,7 +53,7 @@ export async function storeUpload(opts: {
 }): Promise<StoreResult> {
   const { scope, file, uploadedBy } = opts;
 
-  // 1. Size — checked before anything expensive happens.
+  // 1. Size - checked before anything expensive happens.
   if (file.size > MAX_BYTES) {
     throw new UnprocessableError(
       "FILE_TOO_LARGE",
@@ -66,7 +66,7 @@ export async function storeUpload(opts: {
 
   const buf = Buffer.from(await file.arrayBuffer());
 
-  // 2. Content inspection (BR-04/AC-06) — the extension is a hint, never the verdict.
+  // 2. Content inspection (BR-04/AC-06) - the extension is a hint, never the verdict.
   const detected = await detectType(buf, file.name);
   if (!detected) {
     throw new UnprocessableError(
@@ -158,7 +158,7 @@ export async function fileVersions(fileId: string): Promise<StoredFile[]> {
 }
 
 /**
- * BR-14 / AC-05 — mints a download URL.
+ * BR-14 / AC-05 - mints a download URL.
  *
  * Callers must have already authorised the *owning record* (a document, a sheet, a
  * task attachment); this enforces the two rules that belong to the file itself:

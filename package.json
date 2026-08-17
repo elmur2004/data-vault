@@ -23,6 +23,7 @@
     "db:demo": "tsx --tsconfig tsconfig.scripts.json prisma/demo.ts",
     "db:studio": "prisma studio",
     "storage:init": "tsx --tsconfig tsconfig.scripts.json scripts/init-storage.ts",
+    "storage:migrate": "tsx --tsconfig tsconfig.scripts.json scripts/migrate-storage.ts",
     "check": "tsx --tsconfig tsconfig.scripts.json",
     "services:start": "powershell -ExecutionPolicy Bypass -File .devservices/services.ps1 start",
     "services:stop": "powershell -ExecutionPolicy Bypass -File .devservices/services.ps1 stop",
@@ -32,8 +33,6 @@
     "seed": "tsx --tsconfig tsconfig.scripts.json prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.678.0",
-    "@aws-sdk/s3-request-presigner": "^3.678.0",
     "@better-auth/prisma-adapter": "^1.6.27",
     "@date-fns/tz": "^1.2.0",
     "@hookform/resolvers": "^5.7.1",

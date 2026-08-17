@@ -1,5 +1,5 @@
 /**
- * NFR-01 / NFR-02 — measured, not assumed.
+ * NFR-01 / NFR-02 Ã¢â‚¬â€ measured, not assumed.
  *
  *   NFR-01  any table loads in under 1.5 s at 2,000 rows
  *   NFR-02  search returns in under 1 second
@@ -10,8 +10,8 @@
 import { chromium } from "playwright";
 
 const BASE = process.env.VAULT_BASE_URL ?? "http://localhost:3001";
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.local";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.com";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "password123";
 
 const results: { name: string; ms: number; budget: number }[] = [];
 
@@ -48,7 +48,7 @@ async function main() {
     results.push({ name: label, ms: median, budget: 1500 });
   }
 
-  // NFR-02 — the search endpoint itself.
+  // NFR-02 Ã¢â‚¬â€ the search endpoint itself.
   const searchRuns: number[] = [];
   for (let i = 0; i < 3; i++) {
     const ms = await page.evaluate(async () => {

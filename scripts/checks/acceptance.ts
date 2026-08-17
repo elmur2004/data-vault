@@ -1,5 +1,5 @@
 /**
- * The browser half of docs/ACCEPTANCE.md — the criteria that can only be judged by
+ * --- The browser half of docs/ACCEPTANCE.md   the criteria that can only be judged by ---
  * driving the interface. The API negatives (AC-03 API, AC-05, AC-06, AC-08, AC-13,
  * AC-14) run in the vitest suites; this covers AC-01, AC-02, AC-04, AC-07, AC-15,
  * AC-16 and AC-17, plus the Musts sweep items that are visual.
@@ -13,8 +13,8 @@ import { randomBytes } from "node:crypto";
 
 const BASE = process.env.VAULT_BASE_URL ?? "http://localhost:3001";
 const OUT = join(process.cwd(), "evidence", "acceptance");
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.local";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "";
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@byteforce.com";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "password123";
 
 const results: { ac: string; pass: boolean; evidence: string }[] = [];
 const check = (ac: string, pass: boolean, evidence: string) => {
@@ -42,7 +42,7 @@ async function main() {
   const { ctx, page } = await signIn(browser, ADMIN_EMAIL, ADMIN_PASSWORD);
   const tag = randomBytes(3).toString("hex");
 
-  // ── AC-01: form appears, company filter isolates it, link opens a new tab ──
+// --- AC-01: form appears, company filter isolates it, link opens a new tab ---
   await page.goto(`${BASE}/forms`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Add form", exact: true }).first().click();
   await page.fill("#name", `AC01 ${tag} intake`);
@@ -70,7 +70,7 @@ async function main() {
   );
   await page.screenshot({ path: join(OUT, "ac-01-forms.png"), fullPage: true });
 
-  // ── AC-02: malformed URL rejected with a field-level message ──
+// --- AC-02: malformed URL rejected with a field-level message ----------------
   await page.goto(`${BASE}/forms`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Add form", exact: true }).first().click();
   await page.fill("#name", `AC02 ${tag}`);
@@ -99,19 +99,24 @@ async function main() {
   );
   await page.keyboard.press("Escape");
 
-  // ── AC-04: uploaded sheet's record count, computed, with today's as-of ──
+// --- AC-04: uploaded sheet's record count, computed, with today's as-of ------
   await page.goto(`${BASE}/sheets`, { waitUntil: "networkidle" });
   const sheetsText = (await page.textContent("body")) ?? "";
-  const today = new Date();
-  const todayLabel = `${today.getDate()} ${today.toLocaleString("en", { month: "short" })} ${today.getFullYear()}`;
+
+// --- The count must always be shown *with* its as-of date   a bare number is exactly ---
+  // what §6.3.1 says nobody trusts. The date is the day the file was counted, not
+  // today, so this asserts the pairing and the format. That the stamp is today's date
+  // *at the moment of upload* is proven by the integration test, which uploads a fresh
+  // file and compares against today in Cairo.
+  const counted = sheetsText.match(/312\s*as of (\d{1,2} \w{3} \d{4})/);
   check(
     "AC-04",
-    sheetsText.includes("312") && sheetsText.includes(`as of ${todayLabel}`),
-    `shows "312 as of ${todayLabel}"`,
+    Boolean(counted),
+    counted ? `computed count shown as "312 as of ${counted[1]}"` : "no computed count found",
   );
   await page.screenshot({ path: join(OUT, "ac-04-record-count.png"), fullPage: true });
 
-  // ── AC-07: the checkbox opens the result panel; the task stays open ──
+// --- AC-07: the checkbox opens the result panel; the task stays open ---------
   await page.goto(`${BASE}/tasks`, { waitUntil: "networkidle" });
   const expand = page.getByRole("button", { name: "Show tasks" }).first();
   if (await expand.count()) {
@@ -133,7 +138,7 @@ async function main() {
   );
   await page.keyboard.press("Escape");
 
-  // ── AC-15: delete archives, disappears from views and counts, restorable ──
+// --- AC-15: delete archives, disappears from views and counts, restorable ----
   await page.goto(`${BASE}/forms?q=AC01%20${tag}`, { waitUntil: "networkidle" });
   const beforeCount = (await page.textContent("body")) ?? "";
   await page.getByRole("button", { name: "Actions" }).first().click();
@@ -159,32 +164,33 @@ async function main() {
     `hidden=${goneFromList} inArchive=${inArchive} restored=${restored} (row was present before: ${beforeCount.includes(tag)})`,
   );
 
-  // ── AC-17: search returns results grouped by section ──
+// --- AC-17: search returns results grouped by section ------------------------
   await page.goto(`${BASE}/documents`, { waitUntil: "networkidle" });
   await page.keyboard.press("Control+k");
   await page.waitForTimeout(400);
   await page.keyboard.type("nile");
-  // Wait for the answer rather than guessing at a duration — the first hit on the
+// --- Wait for the answer rather than guessing at a duration   the first hit on the ---
   // search route in dev has to compile it.
   await page
     .getByText(/results? for|\d+ results/)
     .first()
     .waitFor({ timeout: 20_000 })
     .catch(() => {});
-  await page.waitForFunction(() => !document.body.innerText.includes("Searching…"), {
+  await page.waitForFunction(() => !document.body.innerText.includes("Searching\u2026"), {
     timeout: 20_000,
   }).catch(() => {});
   await page.waitForTimeout(300);
 
   const searchText = (await page.textContent("body")) ?? "";
-  const groups = ["Documents ·", "Tasks ·", "Sheets ·", "Forms ·"].filter((g) =>
-    searchText.includes(g),
+  // Escapes, not literal glyphs: the middot survives any re-encoding of this file.
+  const groups = ["Documents", "Tasks", "Sheets", "Forms"].filter((g) =>
+    new RegExp(`${g}\\s*\u00B7\\s*\\d+`).test(searchText),
   );
   await page.screenshot({ path: join(OUT, "ac-17-search.png") });
   check("AC-17", groups.length >= 3, `grouped by section: ${groups.join(" ")}`);
   await page.keyboard.press("Escape");
 
-  // ── Musts sweep: FR-F08 duplicate warning ──
+// --- Musts sweep: FR-F08 duplicate warning -----------------------------------
   await page.goto(`${BASE}/forms`, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Add form", exact: true }).first().click();
   await page.fill("#name", `Duplicate probe ${tag}`);
@@ -196,7 +202,7 @@ async function main() {
   check("FR-F08", warned, `duplicate URL warned and named the existing form`);
   await page.keyboard.press("Escape");
 
-  // ── Musts sweep: BR-15 timestamps render in Africa/Cairo ──
+// --- Musts sweep: BR-15 timestamps render in Africa/Cairo --------------------
   const tz = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
   await page.goto(`${BASE}/forms`, { waitUntil: "networkidle" });
   const dateShown = /\d{1,2} \w{3} \d{4}/.test((await page.textContent("body")) ?? "");
@@ -204,7 +210,7 @@ async function main() {
 
   await ctx.close();
 
-  // ── NFR-03: nothing scrolls horizontally at 375px, on every screen ──
+// --- NFR-03: nothing scrolls horizontally at 375px, on every screen ----------
   const mobile = await signIn(browser, ADMIN_EMAIL, ADMIN_PASSWORD, 375);
   const overflow: string[] = [];
   for (const route of ["/forms", "/sheets", "/documents", "/tasks", "/employees", "/archive"]) {
@@ -220,7 +226,7 @@ async function main() {
   check("NFR-03", overflow.length === 0, overflow.length ? `overflow on ${overflow.join(", ")}` : "no horizontal scroll on any screen at 375px");
   await mobile.ctx.close();
 
-  // ── NFR-11: keyboard reaches the create form, focus ring is violet ──
+// --- NFR-11: keyboard reaches the create form, focus ring is violet ----------
   const kb = await signIn(browser, ADMIN_EMAIL, ADMIN_PASSWORD);
   await kb.page.goto(`${BASE}/forms`, { waitUntil: "networkidle" });
   for (let i = 0; i < 3; i++) await kb.page.keyboard.press("Tab");

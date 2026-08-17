@@ -101,6 +101,15 @@ export function toHttpError(e: unknown): { status: number; body: ReturnType<type
   if (isAppError(e)) return { status: e.status, body: errorBody(e) };
   return {
     status: 500,
-    body: { error: "VALIDATION_FAILED", message: "Something went wrong. Try again." },
+    body: {
+      error: "VALIDATION_FAILED",
+      message: "Something went wrong. Try again.",
+      // In development the actual cause is included, because a generic 500 with no
+      // detail is the hardest possible thing to debug. Never in production: an
+      // internal message must not reach a client.
+      ...(process.env.NODE_ENV !== "production"
+        ? { detail: e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
+        : {}),
+    },
   };
 }

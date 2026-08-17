@@ -33,3 +33,7 @@ npm-debug.log*
 # build artefacts
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+# uploaded files (STORAGE_DRIVER=fs). Private user data — never committed, and
+# deliberately outside public/ so nothing serves it without authorisation (BR-14).
+storage/

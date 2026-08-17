@@ -53,9 +53,9 @@ async function main() {
   if (RESET) await reset();
 
   const admin = await db.user.findFirst({ where: { role: "ADMIN" } });
-  if (!admin) throw new Error("Run `npm run db:seed` first — no admin exists.");
+  if (!admin) throw new Error("Run `npm run db:seed` first - no admin exists.");
 
-  // ── People ────────────────────────────────────────────────────────────────
+// --- People ------------------------------------------------------------------
   const employees = [];
   for (const p of PEOPLE) {
     const email = `${p.fullName.split(" ")[0]!.toLowerCase()}.${TAG}@byteforce.local`;
@@ -81,7 +81,7 @@ async function main() {
     console.log(`employee login: ${hana.email} / employee-demo-pass`);
   }
 
-  // ── Forms ─────────────────────────────────────────────────────────────────
+// --- Forms -------------------------------------------------------------------
   const forms = [
     ["Creative request intake", "https://forms.byteforce.test/creative-request", "BYTEFORCE", "Design team queue"],
     ["Campaign asset handover", "https://forms.byteforce.test/asset-handover", "BYTEFORCE", "Notes mention Nile Foods"],
@@ -113,10 +113,10 @@ async function main() {
     });
   }
 
-  // ── Sheets ────────────────────────────────────────────────────────────────
+// --- Sheets ------------------------------------------------------------------
   const sheets = [
     {
-      name: "Nile Foods — campaign leads",
+      name: "Nile Foods - campaign leads",
       type: "CAMPAIGN_LEADS" as const,
       company: "BYTEFORCE" as const,
       dateCreated: day("2026-06-02"),
@@ -166,7 +166,7 @@ async function main() {
     }
   }
 
-  // ── Documents ─────────────────────────────────────────────────────────────
+// --- Documents ---------------------------------------------------------------
   /**
    * These write to object storage directly rather than through storeUpload(), because
    * the upload pipeline pulls in `file-type`, which is ESM-only and cannot be loaded
@@ -207,9 +207,9 @@ trailer << /Root 1 0 R >>
   }
 
   const documents = [
-    ["Retainer agreement — Nile Foods", "CONTRACT", "BYTEFORCE", "Twelve months from 01 Aug 2026"],
-    ["Nile Foods — media plan Q3", "PROPOSAL", "BYTEFORCE", "Search, social and creative split"],
-    ["August invoice — Nile Foods", "INVOICE", "BYTEFORCE", null],
+    ["Retainer agreement - Nile Foods", "CONTRACT", "BYTEFORCE", "Twelve months from 01 Aug 2026"],
+    ["Nile Foods - media plan Q3", "PROPOSAL", "BYTEFORCE", "Search, social and creative split"],
+    ["August invoice - Nile Foods", "INVOICE", "BYTEFORCE", null],
     ["Brand guidelines v4", "BRAND_ASSET", "BYTEFORCE", "Logo, type and colour rules"],
     ["Data processing agreement", "LEGAL", "BSYSTEMS", "Signed by both parties"],
     ["Q2 infrastructure review", "REPORT", "BSYSTEMS", "Uptime, incidents and capacity"],
@@ -229,7 +229,7 @@ trailer << /Root 1 0 R >>
     });
   }
 
-  // ── An uploaded sheet, so the computed record count is visible (AC-04) ─────
+  // - An uploaded sheet, so the computed record count is visible (AC-04) -
   if (!(await db.sheet.findFirst({ where: { name: "August campaign leads (upload)" } }))) {
     const { countCsv } = await import("../src/server/sheets/row-count");
     const { todayInCairo } = await import("../src/lib/datetime");
@@ -257,7 +257,7 @@ trailer << /Root 1 0 R >>
     });
   }
 
-  // ── Tasks ─────────────────────────────────────────────────────────────────
+// --- Tasks -------------------------------------------------------------------
   const [, karim, nour, omar, salma, youssef] = employees;
 
   const tasks: {
@@ -268,7 +268,7 @@ trailer << /Root 1 0 R >>
     company: "BYTEFORCE" | "BSYSTEMS" | null;
     complete?: { at: Date; result: string };
   }[] = [
-    // Hana — one overdue, three open, two completed (one late, one on time)
+    // Hana - one overdue, three open, two completed (one late, one on time)
     {
       employeeId: hana.id,
       name: "Rebuild Q3 lookalike audiences",
